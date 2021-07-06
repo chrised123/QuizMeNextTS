@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import styles from '../../styles/Quiz.module.css'
 import { useRouter } from 'next/router'
+import useSWR from 'swr'
 
 type quizType = {
   title: string,
@@ -12,34 +13,18 @@ type quizType = {
   }[]
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [
-      { params: { name: 'chris' } },
-    ],
-    fallback: false,
-  }
-}
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-export const getStaticProps: GetStaticProps = async () => {
-  const res = await fetch('http://localhost:3000/api/quiz');
-  const quizArray = await res.json();
-
-  return {
-    props: {
-      quizArray
-    }
-  }
-}
-
-export default function QuizWrapper({ quizArray }: { quizArray: quizType[] }) {
+export default function QuizWrapper() {
   const router = useRouter()
-  const {name} = router.query
+  const { name } = router.query
+  const { data } = useSWR('/api/quiz', fetcher)
+
   return (
     <>
       <h1>Quiz from { name }</h1>
       <ol>
-        {quizArray.map((quiz, i) => <li key={i}><Quiz title={quiz.title} description={quiz.description} answers={ quiz.answers }/></li>)}
+        {data?.map((quiz: quizType, i: number) => <li key={i}><Quiz title={quiz.title} description={quiz.description} answers={ quiz.answers }/></li>)}
       </ol>
     </>
   )
